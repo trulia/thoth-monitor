@@ -11,15 +11,16 @@ import org.apache.solr.client.solrj.SolrServerException;
 public abstract class Monitor{
   public ServerDetail serverDetail;
   public String basicQuery;
+  public String basicPoolQuery;
   public SolrServer realTimeThoth;
   public SolrServer historicalDataThoth;
 
   public Monitor(ServerDetail serverDetail, SolrServer realTimeThoth, SolrServer historicalDataThoth){
     this.serverDetail = serverDetail;
-    this.basicQuery = "hostname_s:\""+ serverDetail.getName() + "\""+" AND " +
-            "pool_s:\"" + serverDetail.getPool() + "\""+" AND " +
+    this.basicPoolQuery = "pool_s:\"" + serverDetail.getPool() + "\""+" AND " +
             "port_i:" + serverDetail.getPort() + " AND " +
             "coreName_s:\"" + serverDetail.getCore() + "\" AND NOT exception_b:true AND source_s:SolrQuery";
+    this.basicQuery = "hostname_s:\""+ serverDetail.getName() + "\""+" AND " + basicPoolQuery;
     this.realTimeThoth = realTimeThoth;
     this.historicalDataThoth = historicalDataThoth;
   }

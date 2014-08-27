@@ -16,7 +16,7 @@ public class QTimeMonitor extends Monitor {
   private Double historicalStandardDeviation;
   private Double poolCurrentMeanQTime;
   private Double poolStandardDeviation;
-  private int standardDeviationFactor = 1;
+  private int standardDeviationFactor = 3;
   private String alertBody = "";
 
   private static final String HISTORICAL_QTIME = "avg_qtime_d";
@@ -46,7 +46,7 @@ public class QTimeMonitor extends Monitor {
   }
 
   public Double[] fetchCurrentPoolMeanQTime() throws SolrServerException {
-    SolrQuery sq = new SolrQuery("*:* AND NOT " + basicQuery);
+    SolrQuery sq = new SolrQuery(basicPoolQuery);
     sq.setGetFieldStatistics(CURRENT_QTIME);
     QueryResponse qr = realTimeThoth.query(sq);
     if (qr.getResults().getNumFound() > 1 ) return new Double[]{
