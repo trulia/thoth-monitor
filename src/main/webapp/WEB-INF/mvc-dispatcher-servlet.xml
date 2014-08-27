@@ -1,0 +1,38 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+
+    <context:component-scan base-package="com.springapp.mvc"/>
+
+    <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <property name="prefix" value="/WEB-INF/pages/"/>
+        <property name="suffix" value=".jsp"/>
+    </bean>
+
+    <bean id="placeholderConfig"
+          class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+
+        <property name="locations">
+            <list>
+                <value>classpath:application.default.properties</value>
+                <value>classpath:application.properties</value>
+            </list>
+        </property>
+    </bean>
+
+
+    <bean id="monitor" class="com.trulia.thoth.quartz.Scheduler" init-method="init">
+        <property name="thothIndexURI" value="${thoth.index.url}"/>
+        <property name="serverCache" ref="serverCache"/>
+        <property name="ignoredServers" value="${thoth.monitor.ignore}"/>
+        <property name="quartzSchedule"  value="${thoth.monitor.quartz.schedule}"/>
+    </bean>
+
+    <bean id="serverCache" class="com.trulia.thoth.util.ServerCache" init-method="init">
+    </bean>
+
+
+</beans>
