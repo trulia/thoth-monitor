@@ -77,8 +77,22 @@ public class QTimeMonitor extends Monitor {
       if (stats != null)  {
         historicalMeanQtime = stats[0]; historicalStandardDeviation = stats[1];
         if (currentMeanQTime > historicalMeanQtime + historicalStandardDeviation * standardDeviationFactor ){
-           alertBody += "Current mean QTime ("+currentMeanQTime+") is higher than (NOW-"+timeframe+") mean QTime ("+historicalMeanQtime+") + stdev("+historicalStandardDeviation+"). ";
-        }
+
+
+
+          alertBody +=  "<br>";
+
+          alertBody +="<table style=\"text-align:center\">\n" +
+                  "<tr>\n" +
+                  "  <td><img src=\"http://f.cl.ly/items/3c1U2D2D0f410V0e213C/thoth-logo.png\"></td>\n" +
+                  "  <td><h1>Thoth Qtime Monitor</h1></td>\n" +
+                  "</tr>\n" +
+                  "</table> <hr><br>";
+
+          alertBody += "Current mean QTime for "+serverDetail.getName()+"("+serverDetail.getPort()+") is higher than mean QTime of (NOW - "+timeframe+" <br>";
+          alertBody += serverDetail.getName() + " mean QTime:" +"<b style=\"color:red\";> "+""+currentMeanQTime+"" + "</b><br>";
+          alertBody += "NOW-" +timeframe + " mean qtime:" +"<b>"+" "+historicalMeanQtime+"" + "</b><br><br><br>";
+                  }
       }
 
     }
@@ -88,7 +102,22 @@ public class QTimeMonitor extends Monitor {
       poolCurrentMeanQTime = stats[0];
       poolStandardDeviation = stats[1];
       if (currentMeanQTime > poolCurrentMeanQTime + poolStandardDeviation * standardDeviationFactor )
-        alertBody+=" Current mean QTime ("+currentMeanQTime+") is higher than same pool mean QTime ("+poolCurrentMeanQTime+")";
+      {
+        alertBody +=  "<br>";
+
+        alertBody +="<table style=\"text-align:center\">\n" +
+                "<tr>\n" +
+                "  <td><img src=\"http://f.cl.ly/items/3c1U2D2D0f410V0e213C/thoth-logo.png\"></td>\n" +
+                "  <td><h1>Thoth Qtime Monitor</h1></td>\n" +
+                "</tr>\n" +
+                "</table> <hr><br>";
+
+        alertBody += "Current mean QTime for "+serverDetail.getName()+"("+serverDetail.getPort()+") is higher than mean QTime of the servers of the same pool <br>";
+        alertBody += serverDetail.getName() + " mean QTime:" +"<b style=\"color:red\";> "+""+currentMeanQTime+"" + "</b><br>";
+        alertBody += "Pool(" + serverDetail.getPool()  +") mean qtime:" +"<b>"+" "+poolCurrentMeanQTime+"" + "</b><br><br><br>";
+
+      }
+
 
     }
     if (!"".equals(alertBody)) alert(alertBody);
