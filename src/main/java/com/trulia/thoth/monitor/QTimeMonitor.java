@@ -60,7 +60,7 @@ public class QTimeMonitor extends Monitor {
   public void alert(String body) {
     System.out.println("QTime monitor. Sending alert for " +serverDetail.getName()+"("+ serverDetail.getPort() +")["+serverDetail.getPool()+"]");
     new Mailer("Thoth monitor: QTime alert for "+serverDetail.getName()+"("+ serverDetail.getPort() +")["+serverDetail.getPool()+"]",
-            "Thoth monitor, QTime alert for " +serverDetail.getName()+"("+ serverDetail.getPort() +")["+serverDetail.getPool()+"]. " + body,
+            body,
             1).sendMail();
   }
 
