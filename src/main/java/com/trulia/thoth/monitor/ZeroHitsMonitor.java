@@ -63,6 +63,15 @@ public class ZeroHitsMonitor extends Monitor {
   }
 
   @Override
+  public void run() {
+    try {
+      execute();
+    } catch (SolrServerException e) {
+      e.printStackTrace();
+    }
+  }
+
+  @Override
   public void execute() throws SolrServerException {
     // Fetch current mean ZeroHits
     currentMeanZeroHits = fetchCurrentMeanZeroHits();

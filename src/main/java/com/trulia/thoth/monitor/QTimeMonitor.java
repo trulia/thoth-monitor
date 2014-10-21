@@ -65,6 +65,15 @@ public class QTimeMonitor extends Monitor {
   }
 
   @Override
+  public void run() {
+    try {
+      execute();
+    } catch (SolrServerException e) {
+      e.printStackTrace();
+    }
+  }
+
+  @Override
   public void execute() throws SolrServerException {
     System.out.println("QTime monitoring for server("+serverDetail.getName()+") corename("+serverDetail.getCore()+") port("+serverDetail.getPort()+") pool("+serverDetail.getPool()+")");
     // Fetch current mean QTime

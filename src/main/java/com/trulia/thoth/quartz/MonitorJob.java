@@ -1,14 +1,24 @@
 package com.trulia.thoth.quartz;
 
+import com.trulia.thoth.monitor.Monitor;
 import com.trulia.thoth.monitor.PredictorModelHealthMonitor;
+import com.trulia.thoth.monitor.QTimeMonitor;
+import com.trulia.thoth.monitor.ZeroHitsMonitor;
 import com.trulia.thoth.pojo.ServerDetail;
+import com.trulia.thoth.util.MonitoredServers;
 import com.trulia.thoth.util.ServerCache;
 import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.quartz.*;
 
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  * User: dbraga - Date: 8/16/14
@@ -51,6 +61,39 @@ public class MonitorJob implements Job {
     }
   }
 
+  public List<Monitor> getMonitors(ServerDetail serverDetail) {
+    List<Monitor> monitorList = new ArrayList<Monitor>();
+
+    //Manually adding the Monitor Instances
+    monitorList.add(new QTimeMonitor(serverDetail, realTimeThoth, historicalDataThoth));
+    monitorList.add(new ZeroHitsMonitor(serverDetail, realTimeThoth, historicalDataThoth));
+    return monitorList;
+  }
+
+  public void executeMonitorsOnServerConcurrently(ServerDetail serverDetail) throws InterruptedException {
+    List<Monitor> monitorList = getMonitors(serverDetail);
+
+    System.out.println("Start monitoring server (" + serverDetail.getName() + ") port(" + serverDetail.getPort() + ") coreName(" + serverDetail.getCore() + ")");
+    ArrayList<Future> futureArrayList = new ArrayList<Future>();
+
+    // Create a pool of threads, numberOfMonitors max jobs will execute in parallel
+    //Replication thread pool
+    ExecutorService monitorsThreadPool = Executors.newFixedThreadPool(monitorList.size());
+    for (Monitor monitor : monitorList) {
+      futureArrayList.add(monitorsThreadPool.submit(monitor));
+    }
+
+    for (Future f : futureArrayList) {
+      try {
+        // Check if all the threads are finished.
+        f.get();
+      } catch (ExecutionException e) {
+
+        System.out.println("Exception in executeMonitorsOnServerConcurrently, while checking the threads status");
+        e.printStackTrace();
+      }
+    }
+  }
 
   @Override
   public void execute(JobExecutionContext context) throws JobExecutionException {
@@ -67,17 +110,16 @@ public class MonitorJob implements Job {
 
       monitorThothPredictor(schedulerContext);
 
-      //ArrayList<ServerDetail> servers = new MonitoredServers(realTimeThoth, serverCache).getList();
-      //
-      //
-      //System.out.println("Fetching information about the servers done. Start the monitoring");
-      //for (ServerDetail serverDetail: servers){
-      //  if (isIgnored(serverDetail)) continue;
-      //  System.out.println("Start monitoring server (" + serverDetail.getName()+") port(" + serverDetail.getPort()+") coreName("+ serverDetail.getCore()+ ")");
-      //  new QTimeMonitor(serverDetail, realTimeThoth, historicalDataThoth).execute();
-      //
-      //}
-      //
+      ArrayList<ServerDetail> servers = new MonitoredServers(realTimeThoth, serverCache).getList();
+
+
+      System.out.println("Fetching information about the servers done. Start the monitoring");
+      for (ServerDetail serverDetail: servers){
+        if (isIgnored(serverDetail)) continue;
+        System.out.println("Start monitoring server (" + serverDetail.getName()+") port(" + serverDetail.getPort()+") coreName("+ serverDetail.getCore()+ ")");
+        executeMonitorsOnServerConcurrently(serverDetail);
+      }
+
       System.out.println("Done with monitoring.");
 
       realTimeThoth.shutdown();
@@ -85,7 +127,11 @@ public class MonitorJob implements Job {
 
       } catch (SchedulerException e) {
       e.printStackTrace();
-      }
+      } catch (InterruptedException e) {
+      e.printStackTrace();
+    } catch (SolrServerException e) {
+      e.printStackTrace();
+    }
 
   }
 

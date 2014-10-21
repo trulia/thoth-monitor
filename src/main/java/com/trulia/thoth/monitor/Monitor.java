@@ -8,7 +8,7 @@ import org.apache.solr.client.solrj.SolrServerException;
  * User: dbraga - Date: 8/16/14
  */
 
-public abstract class Monitor{
+public abstract class Monitor implements Runnable{
   public ServerDetail serverDetail;
   public String basicQuery;
   public String basicPoolQuery;
@@ -26,6 +26,6 @@ public abstract class Monitor{
   }
   public void execute() throws SolrServerException {}
   public void alert(String body) {}
-
+  public abstract void run();
 
 }
