@@ -26,8 +26,8 @@ public abstract class Monitor implements Callable<MonitorResult>{
     this.realTimeThoth = realTimeThoth;
     this.historicalDataThoth = historicalDataThoth;
   }
-  public void execute() throws SolrServerException {}
-  public void alert(String body) {}
+  public abstract void execute() throws SolrServerException;
+  public abstract void alert(String body);
   public abstract MonitorResult call();
 
 }
