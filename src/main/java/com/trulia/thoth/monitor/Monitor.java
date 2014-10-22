@@ -4,11 +4,13 @@ import com.trulia.thoth.pojo.ServerDetail;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 
+import java.util.concurrent.Callable;
+
 /**
  * User: dbraga - Date: 8/16/14
  */
 
-public abstract class Monitor{
+public abstract class Monitor implements Callable<MonitorResult>{
   public ServerDetail serverDetail;
   public String basicQuery;
   public String basicPoolQuery;
@@ -26,6 +28,6 @@ public abstract class Monitor{
   }
   public void execute() throws SolrServerException {}
   public void alert(String body) {}
-
+  public abstract MonitorResult call() throws SolrServerException;
 
 }

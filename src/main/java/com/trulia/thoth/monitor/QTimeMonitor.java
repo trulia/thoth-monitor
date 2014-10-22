@@ -59,9 +59,16 @@ public class QTimeMonitor extends Monitor {
   @Override
   public void alert(String body) {
     System.out.println("QTime monitor. Sending alert for " +serverDetail.getName()+"("+ serverDetail.getPort() +")["+serverDetail.getPool()+"]");
-    new Mailer("Thoth monitor: QTime alert for "+serverDetail.getName()+"("+ serverDetail.getPort() +")["+serverDetail.getPool()+"]",
+    /*new Mailer("Thoth monitor: QTime alert for "+serverDetail.getName()+"("+ serverDetail.getPort() +")["+serverDetail.getPool()+"]",
             body,
-            1).sendMail();
+            1).sendMail();*/
+  }
+
+  @Override
+  public MonitorResult call() throws SolrServerException {
+    MonitorResult monitorResult = new MonitorResult();
+    execute();
+    return monitorResult;
   }
 
   @Override
