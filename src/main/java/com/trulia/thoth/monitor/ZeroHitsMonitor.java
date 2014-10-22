@@ -56,23 +56,23 @@ public class ZeroHitsMonitor extends Monitor {
 
   @Override
   public void alert(String body) {
-    System.out.println("QTime monitor. Sending alert for " +serverDetail.getName()+"("+ serverDetail.getPort() +")["+serverDetail.getPool()+"]");
-    new Mailer("Thoth monitor: QTime alert for "+serverDetail.getName()+"("+ serverDetail.getPort() +")["+serverDetail.getPool()+"]",
-            "Thoth monitor, QTime alert for " +serverDetail.getName()+"("+ serverDetail.getPort() +")["+serverDetail.getPool()+"]. " + body,
-            1).sendMail();
+    System.out.println("ZeroHitsMonitor . Sending alert for " +serverDetail.getName()+"("+ serverDetail.getPort() +")["+serverDetail.getPool()+"]");
+    /*new Mailer("Thoth monitor: ZeroHitsMonitor alert for "+serverDetail.getName()+"("+ serverDetail.getPort() +")["+serverDetail.getPool()+"]",
+            "Thoth monitor, ZeroHitsMonitor alert for " +serverDetail.getName()+"("+ serverDetail.getPort() +")["+serverDetail.getPool()+"]. " + body,
+            1).sendMail();*/
   }
 
   @Override
-  public void run() {
-    try {
-      execute();
-    } catch (SolrServerException e) {
-      e.printStackTrace();
-    }
+  public MonitorResult call() throws SolrServerException {
+    MonitorResult monitorResult = new MonitorResult();
+    execute();
+    return monitorResult;
   }
 
   @Override
   public void execute() throws SolrServerException {
+    System.out.println("ZeroHits monitoring for server("+serverDetail.getName()+") corename("+serverDetail.getCore()+") port("+serverDetail.getPort()+") pool("+serverDetail.getPool()+")");
+
     // Fetch current mean ZeroHits
     currentMeanZeroHits = fetchCurrentMeanZeroHits();
     if (null == currentMeanZeroHits) return;

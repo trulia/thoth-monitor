@@ -1,9 +1,6 @@
 package com.trulia.thoth.quartz;
 
-import com.trulia.thoth.monitor.Monitor;
-import com.trulia.thoth.monitor.PredictorModelHealthMonitor;
-import com.trulia.thoth.monitor.QTimeMonitor;
-import com.trulia.thoth.monitor.ZeroHitsMonitor;
+import com.trulia.thoth.monitor.*;
 import com.trulia.thoth.pojo.ServerDetail;
 import com.trulia.thoth.util.MonitoredServers;
 import com.trulia.thoth.util.ServerCache;
@@ -74,7 +71,7 @@ public class MonitorJob implements Job {
     List<Monitor> monitorList = getMonitors(serverDetail);
 
     System.out.println("Start monitoring server (" + serverDetail.getName() + ") port(" + serverDetail.getPort() + ") coreName(" + serverDetail.getCore() + ")");
-    ArrayList<Future> futureArrayList = new ArrayList<Future>();
+    List<Future<MonitorResult>> futureArrayList = new ArrayList<Future<MonitorResult>>();
 
     // Create a pool of threads, numberOfMonitors max jobs will execute in parallel
     //Replication thread pool
@@ -86,13 +83,13 @@ public class MonitorJob implements Job {
     for (Future f : futureArrayList) {
       try {
         // Check if all the threads are finished.
-        f.get();
+        MonitorResult monitorResult = (MonitorResult) f.get();
       } catch (ExecutionException e) {
-
         System.out.println("Exception in executeMonitorsOnServerConcurrently, while checking the threads status");
-        e.printStackTrace();
+        e.getCause().printStackTrace();
       }
     }
+    System.out.println("Stopped monitoring server (" + serverDetail.getName() + ") port(" + serverDetail.getPort() + ") coreName(" + serverDetail.getCore() + ")");
   }
 
   @Override
@@ -107,13 +104,13 @@ public class MonitorJob implements Job {
       ignoredServerDetails = (ArrayList<ServerDetail>) schedulerContext.get("ignoredServers");
       isPredictorMonitoringEnabled = (Boolean) schedulerContext.get("isPredictorMonitoringEnabled");
 
-
       monitorThothPredictor(schedulerContext);
 
-      ArrayList<ServerDetail> servers = new MonitoredServers(realTimeThoth, serverCache).getList();
+      //Restricting the number of servers for testing
+      List<ServerDetail> servers = new MonitoredServers(realTimeThoth, serverCache).getList().subList(0,1);
 
 
-      System.out.println("Fetching information about the servers done. Start the monitoring");
+      System.out.println("Fetching information about the servers done. Start the monitoring\n");
       for (ServerDetail serverDetail: servers){
         if (isIgnored(serverDetail)) continue;
         System.out.println("Start monitoring server (" + serverDetail.getName()+") port(" + serverDetail.getPort()+") coreName("+ serverDetail.getCore()+ ")");
