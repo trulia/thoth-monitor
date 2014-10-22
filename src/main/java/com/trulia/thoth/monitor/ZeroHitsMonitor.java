@@ -1,7 +1,6 @@
 package com.trulia.thoth.monitor;
 
 import com.trulia.thoth.pojo.ServerDetail;
-import com.trulia.thoth.utility.Mailer;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -63,9 +62,13 @@ public class ZeroHitsMonitor extends Monitor {
   }
 
   @Override
-  public MonitorResult call() throws SolrServerException {
+  public MonitorResult call() {
     MonitorResult monitorResult = new MonitorResult();
-    execute();
+    try{
+      execute();
+    } catch (SolrServerException e) {
+      e.printStackTrace();
+    }
     return monitorResult;
   }
 

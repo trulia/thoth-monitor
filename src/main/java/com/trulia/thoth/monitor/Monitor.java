@@ -28,6 +28,6 @@ public abstract class Monitor implements Callable<MonitorResult>{
   }
   public void execute() throws SolrServerException {}
   public void alert(String body) {}
-  public abstract MonitorResult call() throws SolrServerException;
+  public abstract MonitorResult call();
 
 }
