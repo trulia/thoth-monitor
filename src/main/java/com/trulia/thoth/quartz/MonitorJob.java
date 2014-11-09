@@ -1,6 +1,9 @@
 package com.trulia.thoth.quartz;
 
-import com.trulia.thoth.monitor.*;
+import com.trulia.thoth.monitor.AvailableMonitors;
+import com.trulia.thoth.monitor.Monitor;
+import com.trulia.thoth.monitor.MonitorResult;
+import com.trulia.thoth.monitor.PredictorModelHealthMonitor;
 import com.trulia.thoth.pojo.ServerDetail;
 import com.trulia.thoth.util.ServerCache;
 import com.trulia.thoth.util.ThothServers;
@@ -9,7 +12,10 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.quartz.*;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -25,6 +31,10 @@ public class MonitorJob implements Job {
   private SolrServer historicalDataThoth;
   private ServerCache serverCache;
   private ArrayList<ServerDetail> ignoredServerDetails;
+
+  public AvailableMonitors availableMonitors;
+
+
 
   private boolean isPredictorMonitoringEnabled = false;
   private String predictorMonitorUrl = "";
@@ -57,23 +67,45 @@ public class MonitorJob implements Job {
     }
   }
 
-  public List<Monitor> getMonitors(ServerDetail serverDetail) {
-    List<Monitor> monitorList = new ArrayList<Monitor>();
+  //public List<Monitor> getMonitors(ServerDetail serverDetail) {
+  //  List<Monitor> monitorList = new ArrayList<Monitor>();
+  //
+  //  //Manually adding the Monitor Instances
+  //  monitorList.add(new QTimeMonitor(serverDetail, realTimeThoth, historicalDataThoth));
+  //  monitorList.add(new ZeroHitsMonitor(serverDetail, realTimeThoth, historicalDataThoth));
+  //  return monitorList;
+  //}
 
-    //Manually adding the Monitor Instances
-    monitorList.add(new QTimeMonitor(serverDetail, realTimeThoth, historicalDataThoth));
-    monitorList.add(new ZeroHitsMonitor(serverDetail, realTimeThoth, historicalDataThoth));
-    return monitorList;
+  public List<Monitor> applyMonitors(ServerDetail serverDetail) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+    ArrayList<Class> monitorClass = (ArrayList<Class>) availableMonitors.getMonitorList();
+    HashMap<String, AvailableMonitors.MonitorConfiguration> monitorConfiguration = availableMonitors.getMonitorConfiguration();
+
+
+
+    List<Monitor> monitors = new ArrayList<Monitor>();
+
+    for (Class klass: monitorClass){
+      Constructor<?> cons = klass.getConstructor(monitorConfiguration.get(klass.getName()).getConstructors());
+      Object obj = cons.newInstance(new Object[]{serverDetail, realTimeThoth, historicalDataThoth});
+      monitors.add((Monitor) obj);
+    }
+    return monitors;
   }
 
-  public void executeMonitorsOnServerConcurrently(ServerDetail serverDetail) throws InterruptedException {
-    List<Monitor> monitorList = getMonitors(serverDetail);
+  /**
+   * Execute all the monitors on the server , concurrently
+   * @param serverDetail  server to monitor
+   * @throws InterruptedException
+   */
+  public void executeMonitorsConcurrently(ServerDetail serverDetail) throws InterruptedException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
+    //List<Monitor> monitorList = getMonitors(serverDetail);
+    List<Monitor> monitorList = applyMonitors(serverDetail);
 
     System.out.println("Start monitoring server (" + serverDetail.getName() + ") port(" + serverDetail.getPort() + ") coreName(" + serverDetail.getCore() + ")");
     List<Future<MonitorResult>> futureArrayList = new ArrayList<Future<MonitorResult>>();
 
     // Create a pool of threads, numberOfMonitors max jobs will execute in parallel
-    ExecutorService monitorsThreadPool = Executors.newFixedThreadPool(monitorList.size()); //TODO: WHY
+    ExecutorService monitorsThreadPool = Executors.newFixedThreadPool(monitorList.size());
     for (Monitor monitor : monitorList) {
       futureArrayList.add(monitorsThreadPool.submit(monitor));
     }
@@ -83,7 +115,7 @@ public class MonitorJob implements Job {
         // Check if all the threads are finished.
         MonitorResult monitorResult = (MonitorResult) f.get();
       } catch (ExecutionException e) {
-        System.out.println("Exception in executeMonitorsOnServerConcurrently, while checking the threads status");
+        System.out.println("Exception in executeMonitorsConcurrently, while checking the threads status");
         e.getCause().printStackTrace();
       }
     }
@@ -93,6 +125,7 @@ public class MonitorJob implements Job {
   @Override
   public void execute(JobExecutionContext context) throws JobExecutionException {
     SchedulerContext schedulerContext = null;
+
     try {
       schedulerContext = context.getScheduler().getContext();
 
@@ -101,19 +134,24 @@ public class MonitorJob implements Job {
       serverCache = (ServerCache) schedulerContext.get("serverCache");
       ignoredServerDetails = (ArrayList<ServerDetail>) schedulerContext.get("ignoredServers");
       isPredictorMonitoringEnabled = (Boolean) schedulerContext.get("isPredictorMonitoringEnabled");
+      availableMonitors = (AvailableMonitors) schedulerContext.get("availableMonitors");
 
+      //TODO remove?
       monitorThothPredictor(schedulerContext);
 
-      List<ServerDetail> servers = new ThothServers().getList(realTimeThoth);
+      // Get the list of servers to Monitor from Thoth
+      List<ServerDetail> serversToMonitor = new ThothServers().getList(realTimeThoth);
+
 
 
       System.out.println("Fetching information about the servers done. Start the monitoring\n");
-      for (ServerDetail serverDetail: servers){
-        if (isIgnored(serverDetail)) continue;
+      for (ServerDetail serverDetail: serversToMonitor){
+        if (isIgnored(serverDetail)) continue;  // Skip server if ignored
         System.out.println("Start monitoring server (" + serverDetail.getName()+") port(" + serverDetail.getPort()+") coreName("+ serverDetail.getCore()+ ")");
-        executeMonitorsOnServerConcurrently(serverDetail);
+        executeMonitorsConcurrently(serverDetail);
       }
 
+      if (serversToMonitor.size() == 0) System.out.println("No suitable thoth documents found for monitoring. Skipping...");
       System.out.println("Done with monitoring.");
 
       realTimeThoth.shutdown();
@@ -124,6 +162,14 @@ public class MonitorJob implements Job {
       } catch (InterruptedException e) {
       e.printStackTrace();
     } catch (SolrServerException e) {
+      e.printStackTrace();
+    } catch (NoSuchMethodException e) {
+      e.printStackTrace();
+    } catch (InstantiationException e) {
+      e.printStackTrace();
+    } catch (IllegalAccessException e) {
+      e.printStackTrace();
+    } catch (InvocationTargetException e) {
       e.printStackTrace();
     }
 

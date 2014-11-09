@@ -1,9 +1,11 @@
 package com.trulia.thoth.quartz;
 
+import com.trulia.thoth.monitor.AvailableMonitors;
 import com.trulia.thoth.pojo.ServerDetail;
 import com.trulia.thoth.util.ServerCache;
 import org.quartz.*;
 import org.quartz.impl.StdSchedulerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.util.ArrayList;
@@ -25,6 +27,8 @@ public class Scheduler {
   private boolean isThothPredictorEnabled;
   @Value("${thoth.monitor.predictor.health.score.threshold}")
   private String thothPredictorHealthScoreThreshold;
+  @Autowired
+  private AvailableMonitors availableMonitors;
 
   private void retrieveIgnoredServerDetails(){
     ignoredServerDetails = new ArrayList<ServerDetail>();
@@ -55,6 +59,7 @@ public class Scheduler {
     scheduler.getContext().put("isPredictorMonitoringEnabled", isThothPredictorEnabled);
     scheduler.getContext().put("predictorMonitorUrl", thothPredictorUri);
     scheduler.getContext().put("predictorMonitorHealthScoreThreshold", thothPredictorHealthScoreThreshold);
+    scheduler.getContext().put("availableMonitors", availableMonitors);
     scheduler.scheduleJob(workerJob, workerTrigger);
   }
 
