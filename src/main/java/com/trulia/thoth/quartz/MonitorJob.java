@@ -1,7 +1,7 @@
 package com.trulia.thoth.quartz;
 
 import com.trulia.thoth.monitor.AvailableMonitors;
-import com.trulia.thoth.monitor.Monitor;
+import com.trulia.thoth.monitor.Monit;
 import com.trulia.thoth.monitor.MonitorResult;
 import com.trulia.thoth.monitor.PredictorModelHealthMonitor;
 import com.trulia.thoth.pojo.ServerDetail;
@@ -12,10 +12,8 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.quartz.*;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -67,27 +65,25 @@ public class MonitorJob implements Job {
     }
   }
 
-  //public List<Monitor> getMonitors(ServerDetail serverDetail) {
-  //  List<Monitor> monitorList = new ArrayList<Monitor>();
-  //
-  //  //Manually adding the Monitor Instances
-  //  monitorList.add(new QTimeMonitor(serverDetail, realTimeThoth, historicalDataThoth));
-  //  monitorList.add(new ZeroHitsMonitor(serverDetail, realTimeThoth, historicalDataThoth));
-  //  return monitorList;
-  //}
-
-  public List<Monitor> applyMonitors(ServerDetail serverDetail) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
-    ArrayList<Class> monitorClass = (ArrayList<Class>) availableMonitors.getMonitorList();
-    HashMap<String, AvailableMonitors.MonitorConfiguration> monitorConfiguration = availableMonitors.getMonitorConfiguration();
-
-
-
-    List<Monitor> monitors = new ArrayList<Monitor>();
-
-    for (Class klass: monitorClass){
-      Constructor<?> cons = klass.getConstructor(monitorConfiguration.get(klass.getName()).getConstructors());
-      Object obj = cons.newInstance(new Object[]{serverDetail, realTimeThoth, historicalDataThoth});
-      monitors.add((Monitor) obj);
+  /**
+   * Retrieve list of available Monitors
+   * @param serverDetail server to monitor
+   * @return list of monitors ready to be executed
+   */
+  public List<Monit> retrieveMonitorsForServer(ServerDetail serverDetail) {
+    List<Monit> monitors = new ArrayList<Monit>();
+    ArrayList<Class> monitorClasses = (ArrayList<Class>) availableMonitors.getMonitorList();
+    try{
+      for (Class klass: monitorClasses){
+        Monit obj = (Monit) klass.newInstance();
+        // Set default variables for Monitors
+        obj.serverDetail = serverDetail;
+        obj.realtimeThoth = realTimeThoth;
+        obj.shrankThoth = historicalDataThoth;
+        monitors.add(obj);
+      }
+    } catch (Exception e){
+      e.printStackTrace();
     }
     return monitors;
   }
@@ -97,29 +93,33 @@ public class MonitorJob implements Job {
    * @param serverDetail  server to monitor
    * @throws InterruptedException
    */
-  public void executeMonitorsConcurrently(ServerDetail serverDetail) throws InterruptedException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
-    //List<Monitor> monitorList = getMonitors(serverDetail);
-    List<Monitor> monitorList = applyMonitors(serverDetail);
+  public void executeMonitorsConcurrently(ServerDetail serverDetail) throws InterruptedException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException, ClassNotFoundException {
+    List<Monit> monitorList = retrieveMonitorsForServer(serverDetail);
 
-    System.out.println("Start monitoring server (" + serverDetail.getName() + ") port(" + serverDetail.getPort() + ") coreName(" + serverDetail.getCore() + ")");
-    List<Future<MonitorResult>> futureArrayList = new ArrayList<Future<MonitorResult>>();
+    if (monitorList.size() == 0) {
+      System.out.println("No monitors found for server (" + serverDetail.getName() + ") port(" + serverDetail.getPort() + ") coreName(" + serverDetail.getCore() + "). Skipping ...");
+
+    } else {
+      System.out.println("Found "+monitorList.size()+" monitor/s for server (" + serverDetail.getName() + ") port(" + serverDetail.getPort() + ") coreName(" + serverDetail.getCore() + ")");
+      List<Future<MonitorResult>> futures = new ArrayList<Future<MonitorResult>>();
 
     // Create a pool of threads, numberOfMonitors max jobs will execute in parallel
     ExecutorService monitorsThreadPool = Executors.newFixedThreadPool(monitorList.size());
-    for (Monitor monitor : monitorList) {
-      futureArrayList.add(monitorsThreadPool.submit(monitor));
+    for (Monit monitor : monitorList) {
+      futures.add(monitorsThreadPool.submit(monitor));
     }
 
-    for (Future f : futureArrayList) {
+    for (Future f : futures) {
       try {
         // Check if all the threads are finished.
-        MonitorResult monitorResult = (MonitorResult) f.get();
+        MonitorResult monitorResult = (MonitorResult) f.get();  // TODO
       } catch (ExecutionException e) {
         System.out.println("Exception in executeMonitorsConcurrently, while checking the threads status");
         e.getCause().printStackTrace();
       }
     }
-    System.out.println("Stopped monitoring server (" + serverDetail.getName() + ") port(" + serverDetail.getPort() + ") coreName(" + serverDetail.getCore() + ")");
+    }
+    System.out.println("Finished monitoring server (" + serverDetail.getName() + ") port(" + serverDetail.getPort() + ") coreName(" + serverDetail.getCore() + ")");
   }
 
   @Override
@@ -141,10 +141,7 @@ public class MonitorJob implements Job {
 
       // Get the list of servers to Monitor from Thoth
       List<ServerDetail> serversToMonitor = new ThothServers().getList(realTimeThoth);
-
-
-
-      System.out.println("Fetching information about the servers done. Start the monitoring\n");
+      System.out.println("Fetching information about the servers done. Start the monitoring");
       for (ServerDetail serverDetail: serversToMonitor){
         if (isIgnored(serverDetail)) continue;  // Skip server if ignored
         System.out.println("Start monitoring server (" + serverDetail.getName()+") port(" + serverDetail.getPort()+") coreName("+ serverDetail.getCore()+ ")");
@@ -170,6 +167,8 @@ public class MonitorJob implements Job {
     } catch (IllegalAccessException e) {
       e.printStackTrace();
     } catch (InvocationTargetException e) {
+      e.printStackTrace();
+    } catch (ClassNotFoundException e) {
       e.printStackTrace();
     }
 
