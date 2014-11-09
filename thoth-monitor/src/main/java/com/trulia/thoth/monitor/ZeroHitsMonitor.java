@@ -1,6 +1,5 @@
 package com.trulia.thoth.monitor;
 
-import com.trulia.thoth.utility.Mailer;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -23,9 +22,9 @@ public class ZeroHitsMonitor extends Monitor {
   @Override
   public void alert(String body) {
     System.out.println("ZeroHitsMonitor . Sending alert for " +serverDetail.getName()+"("+ serverDetail.getPort() +")["+serverDetail.getPool()+"]");
-    new Mailer("Thoth monitor: ZeroHitsMonitor alert for "+serverDetail.getName()+"("+ serverDetail.getPort() +")["+serverDetail.getPool()+"]",
-            "Thoth monitor, ZeroHitsMonitor alert for " +serverDetail.getName()+"("+ serverDetail.getPort() +")["+serverDetail.getPool()+"]. " + body,
-            1).sendMail();
+    String subject = "Thoth monitor, ZeroHitsMonitor alert for " +serverDetail.getName()+"("+ serverDetail.getPort() +")["+serverDetail.getPool()+"]. ";
+    String content = body;
+    mailer.sendMail(subject, content);
   }
 
 

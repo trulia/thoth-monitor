@@ -1,6 +1,5 @@
 package com.trulia.thoth.monitor;
 
-import com.trulia.thoth.utility.Mailer;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -21,7 +20,6 @@ public class QTimeMonitor extends Monitor {
   
   private static final String HISTORICAL_QTIME = "avg_qtime_d";
   private static final String CURRENT_QTIME = "qtime_i";
-
 
   public Double[] fetchHistoricalMeanQtime(String timeframe) throws SolrServerException {
     SolrQuery sq = new SolrQuery(basicQuery + " AND masterDocumentMin_b:true AND masterTime_dt:["+ timeframe + " TO *]");
@@ -59,9 +57,9 @@ public class QTimeMonitor extends Monitor {
   @Override
   public void alert(String body) {
     System.out.println("QTime monitor. Sending alert for " +serverDetail.getName()+"("+ serverDetail.getPort() +")["+serverDetail.getPool()+"]");
-    new Mailer("Thoth monitor: QTime alert for "+serverDetail.getName()+"("+ serverDetail.getPort() +")["+serverDetail.getPool()+"]",
-        body,
-        1).sendMail();
+    String subject = "Thoth monitor: QTime alert for "+serverDetail.getName()+"("+ serverDetail.getPort() +")["+serverDetail.getPool()+"]";
+    String content = body;
+    mailer.sendMail(subject, content);
 
   }
 
@@ -128,6 +126,10 @@ public class QTimeMonitor extends Monitor {
 
 
       }
+
+      alert(alertBody);
+
+
       if (!"".equals(alertBody)) alert(alertBody);
     } catch (SolrServerException e){
       e.printStackTrace();

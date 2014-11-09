@@ -1,10 +1,12 @@
 package com.trulia.thoth.utility;
-import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.Session;
 import javax.mail.Transport;
+import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import java.util.Properties;
@@ -12,56 +14,56 @@ import java.util.Properties;
 /**
  * User: dbraga - Date: 10/15/13
  */
-//TODO: finish mailer
+
+@Component
 public class Mailer {
+  @Value("${thoth.mailer.sender}")
+  private String sender;
+  @Value("${thoth.mailer.receiver}")
+  private String receiver;
+  @Value("${thoth.mailer.host}")
+  private String host = "localhost";
 
-  private static final Logger LOG = Logger.getLogger(Mailer.class);
+  public Mailer(){} // Empty constructor
 
-  private static final String sender = "dbraga@trulia.com";
-  private static final String receiver = "dbraga@trulia.com";
-  private static final String host = "localhost";
-
-  private String subject;
-  private String content;
-  private int priority;
-
-  public Mailer(String subject, String content, int priority){
-    this.subject = subject;
-    this.content = content;
-    this.priority = priority;
-  }
-
-  public boolean sendMail() {
-    Properties props = System.getProperties();
-    props.setProperty("mail.smtp.host", host);
-
-    Session session = Session.getDefaultInstance(props);
-
+  private MimeMessage prepareMessage(String subject, String content){
+    MimeMessage message = null;
     try {
-      MimeMessage message = new MimeMessage(session);
+      Properties props = System.getProperties();
+      props.setProperty("mail.smtp.host", host);
+      Session session = Session.getDefaultInstance(props);
+      message = new MimeMessage(session);
       message.setFrom(new InternetAddress(sender));
-      message.addRecipient(Message.RecipientType.TO,
-              new InternetAddress(receiver));
-
+      message.addRecipient(Message.RecipientType.TO, new InternetAddress(receiver));
       message.setSubject(subject);
       message.setContent(
-              content,
-              "text/html" );
+          content,
+          "text/html" );
 
-      message.addHeader("X-Priority", String.valueOf(priority));
-      Transport.send(message);
-      //Transport.send(message, message.getAllRecipients());
+      // Message sent as important
+      message.addHeader("X-Priority", "1");
 
-      return true;
-    } catch (MessagingException mex) {
-      mex.printStackTrace();
-      return false;
+    } catch (AddressException e) {
+      e.printStackTrace();
+    } catch (MessagingException e) {
+      e.printStackTrace();
     }
-
+    finally {
+      return message;
+    }
   }
 
-  public static void main(String[] args){
-    new Mailer("test","test",1).sendMail();
+  public boolean sendMail(String subject, String content) {
+    boolean sent = false;
+    try {
+      Transport.send(prepareMessage(subject, content));
+      sent = true;
+    } catch (MessagingException e) {
+      e.printStackTrace();
+    }
+    finally {
+      return sent;
+    }
   }
 
 }

@@ -7,6 +7,7 @@ import com.trulia.thoth.monitor.PredictorModelHealthMonitor;
 import com.trulia.thoth.pojo.ServerDetail;
 import com.trulia.thoth.util.ServerCache;
 import com.trulia.thoth.util.ThothServers;
+import com.trulia.thoth.utility.Mailer;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.quartz.Job;
@@ -34,6 +35,7 @@ public class MonitorJob implements Job {
 
   public AvailableMonitors availableMonitors;
 
+  private Mailer mailer;
 
 
   private boolean isPredictorMonitoringEnabled = false;
@@ -82,6 +84,7 @@ public class MonitorJob implements Job {
         obj.serverDetail = serverDetail;
         obj.realtimeThoth = realTimeThoth;
         obj.shrankThoth = historicalDataThoth;
+        obj.mailer = mailer;
         monitors.add(obj);
       }
     } catch (Exception e){
@@ -136,6 +139,8 @@ public class MonitorJob implements Job {
       ignoredServerDetails = (ArrayList<ServerDetail>) schedulerContext.get("ignoredServers");
       isPredictorMonitoringEnabled = (Boolean) schedulerContext.get("isPredictorMonitoringEnabled");
       availableMonitors = (AvailableMonitors) schedulerContext.get("availableMonitors");
+      mailer = (Mailer) schedulerContext.get("mailer");
+
 
       //TODO remove?
       monitorThothPredictor(schedulerContext);
