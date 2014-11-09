@@ -13,7 +13,6 @@ public abstract class Monit implements Callable<MonitorResult> {
   public SolrServer realtimeThoth;
   public SolrServer shrankThoth;
 
-  public abstract void execute();
   public abstract void alert(String body);
   public abstract MonitorResult call();
 }

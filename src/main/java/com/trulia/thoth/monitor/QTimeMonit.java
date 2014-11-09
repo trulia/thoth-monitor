@@ -1,5 +1,6 @@
 package com.trulia.thoth.monitor;
 
+import com.trulia.thoth.utility.Mailer;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -56,13 +57,11 @@ public class QTimeMonit extends Monit {
   
 
   @Override
-  public void execute() {
-
-  }
-
-  @Override
   public void alert(String body) {
-    System.out.println("Alert!"  + body);
+    System.out.println("QTime monitor. Sending alert for " +serverDetail.getName()+"("+ serverDetail.getPort() +")["+serverDetail.getPool()+"]");
+    new Mailer("Thoth monitor: QTime alert for "+serverDetail.getName()+"("+ serverDetail.getPort() +")["+serverDetail.getPool()+"]",
+        body,
+        1).sendMail();
 
   }
 
@@ -129,7 +128,7 @@ public class QTimeMonit extends Monit {
 
 
       }
-      if (!"".equals(alertBody)) alert(alertBody);      
+      if (!"".equals(alertBody)) alert(alertBody);
     } catch (SolrServerException e){
       e.printStackTrace();
     }
