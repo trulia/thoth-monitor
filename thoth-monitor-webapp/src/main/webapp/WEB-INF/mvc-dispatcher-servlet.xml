@@ -26,11 +26,6 @@
         </property>
     </bean>
 
-    <bean id="parentScheduler" class="com.trulia.thoth.scheduler.ParentScheduler" init-method="init">
-
-    </bean>
-
-
     <bean id="monitor" class="com.trulia.thoth.quartz.Scheduler" init-method="init">
         <property name="thothIndexURI" value="${thoth.index.url}"/>
         <property name="serverCache" ref="serverCache"/>

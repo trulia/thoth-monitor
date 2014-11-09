@@ -35,7 +35,6 @@ public class Scheduler {
 
   private void retrieveIgnoredServerDetails(){
     ignoredServerDetails = new ArrayList<ServerDetail>();
-
     for (String ignoredServer: ignoredServers.split(",")){
       String[] splitted = ignoredServer.split(";");
       if (splitted.length % 4 == 0) ignoredServerDetails.add(new ServerDetail(splitted[0], splitted[3], splitted[1], splitted[2]));
@@ -47,7 +46,7 @@ public class Scheduler {
             .withIdentity("monitorJob", "group1").build();
     Trigger workerTrigger = TriggerBuilder
             .newTrigger()
-            .withIdentity(",monitorTrigger", "group1")
+            .withIdentity("monitorTrigger", "group1")
             .withSchedule(
                     CronScheduleBuilder.cronSchedule(quartzSchedule))
             .build();

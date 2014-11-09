@@ -32,16 +32,19 @@ public class MonitorJob implements Job {
   private SolrServer historicalDataThoth;
   private ServerCache serverCache;
   private ArrayList<ServerDetail> ignoredServerDetails;
-
   public AvailableMonitors availableMonitors;
-
   private Mailer mailer;
-
-
+  private String realTimeThothCore = "collection1/";
+  private String shrankThothCore ="shrank/";
   private boolean isPredictorMonitoringEnabled = false;
   private String predictorMonitorUrl = "";
   private String predictorMonitorHealthScoreThreshold = "";
 
+  /**
+   * Check if server is part of the ignored servers
+    * @param serverDetail server to check
+   * @return true if ignored , false if not
+   */
   private boolean isIgnored(ServerDetail serverDetail){
     for (ServerDetail toCheck: ignoredServerDetails){
       if ((toCheck.getName().equals(serverDetail.getName())) &&
@@ -106,7 +109,6 @@ public class MonitorJob implements Job {
     } else {
       System.out.println("Found "+monitorList.size()+" monitor/s for server (" + serverDetail.getName() + ") port(" + serverDetail.getPort() + ") coreName(" + serverDetail.getCore() + ")");
       List<Future<MonitorResult>> futures = new ArrayList<Future<MonitorResult>>();
-
       // Create a pool of threads, numberOfMonitors max jobs will execute in parallel
       ExecutorService monitorsThreadPool = Executors.newFixedThreadPool(monitorList.size());
       for (Monitor monitor : monitorList) {
@@ -129,19 +131,15 @@ public class MonitorJob implements Job {
   @Override
   public void execute(JobExecutionContext context) throws JobExecutionException {
     SchedulerContext schedulerContext = null;
-
     try {
       schedulerContext = context.getScheduler().getContext();
-
-      realTimeThoth = new HttpSolrServer((String) schedulerContext.get("thothIndexURI") + "collection1");
-      historicalDataThoth = new HttpSolrServer((String) schedulerContext.get("thothIndexURI") + "shrank/");
+      realTimeThoth = new HttpSolrServer(schedulerContext.get("thothIndexURI") + realTimeThothCore);
+      historicalDataThoth = new HttpSolrServer(schedulerContext.get("thothIndexURI") + shrankThothCore);
       serverCache = (ServerCache) schedulerContext.get("serverCache");
       ignoredServerDetails = (ArrayList<ServerDetail>) schedulerContext.get("ignoredServers");
       isPredictorMonitoringEnabled = (Boolean) schedulerContext.get("isPredictorMonitoringEnabled");
       availableMonitors = (AvailableMonitors) schedulerContext.get("availableMonitors");
       mailer = (Mailer) schedulerContext.get("mailer");
-
-
       //TODO remove?
       monitorThothPredictor(schedulerContext);
 
