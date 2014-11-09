@@ -1,6 +1,7 @@
 package com.trulia.thoth.monitor;
 
 import com.trulia.thoth.pojo.ServerDetail;
+import com.trulia.thoth.utility.Mailer;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -29,6 +30,7 @@ public class QTimeMonitor extends Monitor {
   public Double[] fetchHistoricalMeanQtime(String timeframe) throws SolrServerException {
     SolrQuery sq = new SolrQuery(basicQuery + " AND masterDocumentMin_b:true AND masterTime_dt:["+ timeframe + " TO *]");
     sq.setGetFieldStatistics(HISTORICAL_QTIME);
+    System.out.println(sq);
     QueryResponse qr = historicalDataThoth.query(sq);
     if (qr.getResults().getNumFound() > 1) return  new Double[]{
             (Double) qr.getFieldStatsInfo().get(HISTORICAL_QTIME).getMean(),
@@ -58,9 +60,9 @@ public class QTimeMonitor extends Monitor {
   @Override
   public void alert(String body) {
     System.out.println("QTime monitor. Sending alert for " +serverDetail.getName()+"("+ serverDetail.getPort() +")["+serverDetail.getPool()+"]");
-    /*new Mailer("Thoth monitor: QTime alert for "+serverDetail.getName()+"("+ serverDetail.getPort() +")["+serverDetail.getPool()+"]",
+    new Mailer("Thoth monitor: QTime alert for "+serverDetail.getName()+"("+ serverDetail.getPort() +")["+serverDetail.getPool()+"]",
             body,
-            1).sendMail();*/
+            1).sendMail();
   }
 
   @Override

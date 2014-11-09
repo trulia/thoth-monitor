@@ -21,7 +21,7 @@ public abstract class Monitor implements Callable<MonitorResult>{
     this.serverDetail = serverDetail;
     this.basicPoolQuery = "pool_s:\"" + serverDetail.getPool() + "\""+" AND " +
             "port_i:" + serverDetail.getPort() + " AND " +
-            "coreName_s:\"" + serverDetail.getCore() + "\" AND NOT exception_b:true AND source_s:SolrQuery";
+            "coreName_s:\"" + serverDetail.getCore() + "\" AND NOT exception_b:true "; // AND source_s:SolrQuery"; TODO: source?
     this.basicQuery = "hostname_s:\""+ serverDetail.getName() + "\""+" AND " + basicPoolQuery;
     this.realTimeThoth = realTimeThoth;
     this.historicalDataThoth = historicalDataThoth;

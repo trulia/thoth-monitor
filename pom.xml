@@ -21,7 +21,7 @@
         <dependency>
             <groupId>com.trulia.thoth</groupId>
             <artifactId>thoth-core</artifactId>
-            <version>1.1-SNAPSHOT</version>
+            <version>1.2-SNAPSHOT</version>
         </dependency>
 
         <dependency>

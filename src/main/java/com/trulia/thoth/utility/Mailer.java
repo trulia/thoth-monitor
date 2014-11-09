@@ -19,7 +19,7 @@ public class Mailer {
 
   private static final String sender = "dbraga@trulia.com";
   private static final String receiver = "dbraga@trulia.com";
-  private static final String host = "thoth";
+  private static final String host = "localhost";
 
   private String subject;
   private String content;
@@ -32,9 +32,11 @@ public class Mailer {
   }
 
   public boolean sendMail() {
-    Properties properties = System.getProperties();
-    properties.setProperty("mail.smtp.host", host);
-    Session session = Session.getDefaultInstance(properties);
+    Properties props = System.getProperties();
+    props.setProperty("mail.smtp.host", host);
+
+    Session session = Session.getDefaultInstance(props);
+
     try {
       MimeMessage message = new MimeMessage(session);
       message.setFrom(new InternetAddress(sender));
@@ -48,6 +50,7 @@ public class Mailer {
 
       message.addHeader("X-Priority", String.valueOf(priority));
       Transport.send(message);
+      //Transport.send(message, message.getAllRecipients());
 
       return true;
     } catch (MessagingException mex) {
@@ -55,6 +58,10 @@ public class Mailer {
       return false;
     }
 
+  }
+
+  public static void main(String[] args){
+    new Mailer("test","test",1).sendMail();
   }
 
 }

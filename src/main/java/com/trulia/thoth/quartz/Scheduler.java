@@ -36,14 +36,13 @@ public class Scheduler {
   }
 
   public void init() throws SchedulerException {
-
     JobDetail workerJob = JobBuilder.newJob(MonitorJob.class)
-            .withIdentity("pendingWorkJob", "group1").build();
+            .withIdentity("monitorJob", "group1").build();
     Trigger workerTrigger = TriggerBuilder
             .newTrigger()
-            .withIdentity("pendingWorkTrigger", "group1")
+            .withIdentity(",monitorTrigger", "group1")
             .withSchedule(
-                    CronScheduleBuilder.cronSchedule(quartzSchedule)) // execute this every day at midnight
+                    CronScheduleBuilder.cronSchedule(quartzSchedule))
             .build();
 
     //Schedule it
@@ -53,12 +52,9 @@ public class Scheduler {
     scheduler.getContext().put("serverCache", serverCache);
     retrieveIgnoredServerDetails();
     scheduler.getContext().put("ignoredServers", ignoredServerDetails);
-
     scheduler.getContext().put("isPredictorMonitoringEnabled", isThothPredictorEnabled);
     scheduler.getContext().put("predictorMonitorUrl", thothPredictorUri);
     scheduler.getContext().put("predictorMonitorHealthScoreThreshold", thothPredictorHealthScoreThreshold);
-
-
     scheduler.scheduleJob(workerJob, workerTrigger);
   }
 

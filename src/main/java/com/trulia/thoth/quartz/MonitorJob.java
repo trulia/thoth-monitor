@@ -2,14 +2,13 @@ package com.trulia.thoth.quartz;
 
 import com.trulia.thoth.monitor.*;
 import com.trulia.thoth.pojo.ServerDetail;
-import com.trulia.thoth.util.MonitoredServers;
 import com.trulia.thoth.util.ServerCache;
+import com.trulia.thoth.util.ThothServers;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.quartz.*;
 
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -74,8 +73,7 @@ public class MonitorJob implements Job {
     List<Future<MonitorResult>> futureArrayList = new ArrayList<Future<MonitorResult>>();
 
     // Create a pool of threads, numberOfMonitors max jobs will execute in parallel
-    //Replication thread pool
-    ExecutorService monitorsThreadPool = Executors.newFixedThreadPool(monitorList.size());
+    ExecutorService monitorsThreadPool = Executors.newFixedThreadPool(monitorList.size()); //TODO: WHY
     for (Monitor monitor : monitorList) {
       futureArrayList.add(monitorsThreadPool.submit(monitor));
     }
@@ -98,7 +96,7 @@ public class MonitorJob implements Job {
     try {
       schedulerContext = context.getScheduler().getContext();
 
-      realTimeThoth = new HttpSolrServer((String) schedulerContext.get("thothIndexURI") + "collection1/");
+      realTimeThoth = new HttpSolrServer((String) schedulerContext.get("thothIndexURI") + "collection1");
       historicalDataThoth = new HttpSolrServer((String) schedulerContext.get("thothIndexURI") + "shrank/");
       serverCache = (ServerCache) schedulerContext.get("serverCache");
       ignoredServerDetails = (ArrayList<ServerDetail>) schedulerContext.get("ignoredServers");
@@ -106,8 +104,7 @@ public class MonitorJob implements Job {
 
       monitorThothPredictor(schedulerContext);
 
-      //Restricting the number of servers for testing
-      List<ServerDetail> servers = new MonitoredServers(realTimeThoth, serverCache).getList().subList(0,1);
+      List<ServerDetail> servers = new ThothServers().getList(realTimeThoth);
 
 
       System.out.println("Fetching information about the servers done. Start the monitoring\n");
