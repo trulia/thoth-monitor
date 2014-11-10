@@ -12,8 +12,6 @@ public class ZeroHitsMonitor extends Monitor {
   private Long currentZeroHitsQueriesRatio;
   private Double historicalZeroHitsRatio;
   private Double historicalZeroHitsStandardDeviation;
-  private Double poolCurrentMeanQTime;
-  private Double poolStandardDeviation;
   private int standardDeviationFactor = 1;
   private String alertBody = "";
   private String basicQuery;
