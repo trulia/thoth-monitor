@@ -9,9 +9,9 @@ import org.apache.solr.client.solrj.response.QueryResponse;
  */
 public class ZeroHitsMonitor extends Monitor {
 
-  private Long currentMeanZeroHits;
-  private Double historicalMeanQtime;
-  private Double historicalStandardDeviation;
+  private Long currentZeroHitsQueriesRatio;
+  private Double historicalZeroHitsRatio;
+  private Double historicalZeroHitsStandardDeviation;
   private Double poolCurrentMeanQTime;
   private Double poolStandardDeviation;
   private int standardDeviationFactor = 1;
@@ -28,22 +28,31 @@ public class ZeroHitsMonitor extends Monitor {
   }
 
 
-  public Double[] fetchHistoricalMeanZeroHits(String timeframe) throws SolrServerException {
+  public Double[] fetchHistoricalZeroHitsQueriesRatio(String timeframe) throws SolrServerException {
     SolrQuery sq = new SolrQuery(basicQuery + " AND masterDocumentMin_b:true AND masterTime_dt:["+ timeframe + " TO *]");
     sq.setGetFieldStatistics("zeroHits-count_i");
     QueryResponse qr = shrankThoth.query(sq);
-    if (qr.getResults().getNumFound() > 1) return  new Double[]{
-        (Double) qr.getFieldStatsInfo().get("zeroHits-count_i").getMean(),
+
+    if (qr.getResults().getNumFound() > 1)
+      return new Double[]{
+        (Double) qr.getFieldStatsInfo().get("zeroHits-count_i").getMean()/qr.getFieldStatsInfo().get("zeroHits-count_i").getCount(),
         (Double) qr.getFieldStatsInfo().get("zeroHits-count_i").getStddev()};
     else return null;
   }
 
-  public Long fetchCurrentMeanZeroHits() throws SolrServerException {
+  /**
+   * Fetch current ratio of zero hits queries
+   * @return ratio
+   * @throws SolrServerException
+   */
+  public Long fetchCurrentZeroHitsQueriesRatio() throws SolrServerException {
     SolrQuery sq = new SolrQuery(basicQuery + " AND hits_i:0");
-    sq.setGetFieldStatistics("qtime_i");
     QueryResponse qr = realtimeThoth.query(sq);
-    if (qr.getResults().getNumFound() > 1 ) return (Long) qr.getFieldStatsInfo().get("qtime_i").getCount();
-    else return null;
+    long numberOfZeroHitsQueries = qr.getResults().getNumFound();
+    sq = new SolrQuery(basicQuery);
+    qr = realtimeThoth.query(sq);
+    long numberOfQueries = qr.getResults().getNumFound();
+    return numberOfZeroHitsQueries/numberOfQueries;
   }
   
   @Override
@@ -57,35 +66,37 @@ public class ZeroHitsMonitor extends Monitor {
     System.out.println("ZeroHits monitoring for server("+serverDetail.getName()+") corename("+serverDetail.getCore()+") port("+serverDetail.getPort()+") pool("+serverDetail.getPool()+")");
 
     try{
-      // Fetch current mean ZeroHits
-      currentMeanZeroHits = fetchCurrentMeanZeroHits();
-      if (null == currentMeanZeroHits) return null; //TODO
+      // Fetch current Ratio of  Zero Hits queries
+      currentZeroHitsQueriesRatio = fetchCurrentZeroHitsQueriesRatio();
+      if (null == currentZeroHitsQueriesRatio) return null;
 
       // Fetch mean Historical ZeroHits for different timeframes and the standard deviation
       for (String timeframe: new String[]{ "NOW/HOUR-1HOUR", "NOW/DAY-1DAY","NOW/DAY-7DAY","NOW/DAY-30DAY" }){
-        Double[] stats = fetchHistoricalMeanZeroHits(timeframe);
+        Double[] stats = fetchHistoricalZeroHitsQueriesRatio(timeframe);
         if (stats != null)  {
-          historicalMeanQtime = stats[0]; historicalStandardDeviation = stats[1];
-          if (currentMeanZeroHits > historicalMeanQtime + historicalStandardDeviation * standardDeviationFactor ){
-            alertBody += "Current mean QTime ("+ currentMeanZeroHits +") is higher than (NOW-"+timeframe+") mean QTime ("+historicalMeanQtime+") + stdev("+historicalStandardDeviation+"). ";
+          historicalZeroHitsRatio = stats[0]; historicalZeroHitsStandardDeviation = stats[1];
+          if (currentZeroHitsQueriesRatio > historicalZeroHitsRatio + historicalZeroHitsStandardDeviation * standardDeviationFactor ){
+            String body = "Current Zero hits ratio ("+ currentZeroHitsQueriesRatio +") is higher than (NOW-"+timeframe+") mean QTime ("+ historicalZeroHitsRatio +") + stdev("+ historicalZeroHitsStandardDeviation +"). ";
+            appendToAlert(body);
+
           }
         }
-
       }
-      //TODO
-      //// Fetch mean QTime for the other members of the same pool
-      //Double[] stats = fetchCurrentPoolMeanQTime();
-      //if (stats != null)  {
-      //  poolCurrentMeanQTime = stats[0];
-      //  poolStandardDeviation = stats[1];
-      //  if (currentMeanZeroHits > poolCurrentMeanQTime + poolStandardDeviation * standardDeviationFactor )
-      //    alertBody+=" Current mean QTime ("+ currentMeanZeroHits +") is higher than same pool mean QTime ("+poolCurrentMeanQTime+")";
-      //
-      //}
+
       if (!"".equals(alertBody)) alert(alertBody);
     } catch (Exception e){
      e.printStackTrace();
     }
    return new MonitorResult(); //TODO
   }
+
+  /**
+   * Utility used to append thoth header to each alert message
+   * @param body fixed body
+   */
+  private void appendToAlert(String body){
+    alertBody += alertHeader;
+    alertBody += body;
+  }
+
 }
