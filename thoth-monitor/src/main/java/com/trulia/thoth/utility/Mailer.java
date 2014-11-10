@@ -1,4 +1,5 @@
 package com.trulia.thoth.utility;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -22,7 +23,7 @@ public class Mailer {
   @Value("${thoth.mailer.receiver}")
   private String receiver;
   @Value("${thoth.mailer.host}")
-  private String host = "localhost";
+  private String host;
 
   public Mailer(){} // Empty constructor
 
@@ -31,7 +32,7 @@ public class Mailer {
     try {
       Properties props = System.getProperties();
       props.setProperty("mail.smtp.host", host);
-      Session session = Session.getDefaultInstance(props);
+      Session session = Session.getInstance(props);
       message = new MimeMessage(session);
       message.setFrom(new InternetAddress(sender));
       message.addRecipient(Message.RecipientType.TO, new InternetAddress(receiver));
