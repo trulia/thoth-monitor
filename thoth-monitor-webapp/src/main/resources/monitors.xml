@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Monitors>
+    <Monitor>
+        <name>QTime Monitor</name>
+        <className>com.trulia.thoth.monitor.QTimeMonitor</className>
+    </Monitor>
+    <Monitor>
+        <name>Zero hits Monitor</name>
+        <className>com.trulia.thoth.monitor.ZeroHitsMonitor</className>
+    </Monitor>
+
+</Monitors>

@@ -1,9 +1,12 @@
 package com.trulia.thoth.quartz;
 
+import com.trulia.thoth.monitor.AvailableMonitors;
 import com.trulia.thoth.pojo.ServerDetail;
 import com.trulia.thoth.util.ServerCache;
+import com.trulia.thoth.utility.Mailer;
 import org.quartz.*;
 import org.quartz.impl.StdSchedulerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.util.ArrayList;
@@ -25,10 +28,13 @@ public class Scheduler {
   private boolean isThothPredictorEnabled;
   @Value("${thoth.monitor.predictor.health.score.threshold}")
   private String thothPredictorHealthScoreThreshold;
+  @Autowired
+  private AvailableMonitors availableMonitors;
+  @Autowired
+  private Mailer mailer;
 
   private void retrieveIgnoredServerDetails(){
     ignoredServerDetails = new ArrayList<ServerDetail>();
-
     for (String ignoredServer: ignoredServers.split(",")){
       String[] splitted = ignoredServer.split(";");
       if (splitted.length % 4 == 0) ignoredServerDetails.add(new ServerDetail(splitted[0], splitted[3], splitted[1], splitted[2]));
@@ -36,14 +42,13 @@ public class Scheduler {
   }
 
   public void init() throws SchedulerException {
-
     JobDetail workerJob = JobBuilder.newJob(MonitorJob.class)
-            .withIdentity("pendingWorkJob", "group1").build();
+            .withIdentity("monitorJob", "group1").build();
     Trigger workerTrigger = TriggerBuilder
             .newTrigger()
-            .withIdentity("pendingWorkTrigger", "group1")
+            .withIdentity("monitorTrigger", "group1")
             .withSchedule(
-                    CronScheduleBuilder.cronSchedule(quartzSchedule)) // execute this every day at midnight
+                    CronScheduleBuilder.cronSchedule(quartzSchedule))
             .build();
 
     //Schedule it
@@ -53,12 +58,11 @@ public class Scheduler {
     scheduler.getContext().put("serverCache", serverCache);
     retrieveIgnoredServerDetails();
     scheduler.getContext().put("ignoredServers", ignoredServerDetails);
-
     scheduler.getContext().put("isPredictorMonitoringEnabled", isThothPredictorEnabled);
     scheduler.getContext().put("predictorMonitorUrl", thothPredictorUri);
     scheduler.getContext().put("predictorMonitorHealthScoreThreshold", thothPredictorHealthScoreThreshold);
-
-
+    scheduler.getContext().put("availableMonitors", availableMonitors);
+    scheduler.getContext().put("mailer", mailer);
     scheduler.scheduleJob(workerJob, workerTrigger);
   }
 
