@@ -1,0 +1,35 @@
+<img align="left" src="img/thoth.png?raw=true">  &nbsp;&nbsp; Thoth Monitor
+======================
+<br><br>
+
+What is Thoth ?
+=====================
+**Thoth** is a real-time solr monitor and search analysis engine. It's a set of tools that can help you collect, visualize and leaverage data coming from your solr search infrastucture.
+Want to learn more? [See the Wiki](https://github.com/trulia/thoth/wiki)
+
+Thoth Monitor
+======================
+**Thoth Monitor** is the module that is responsable of monitoring various metrics. It leaverages collected Thoth data and offers continous monitoring and alerting. 
+<img src="img/thoth-monitor-schema.png?raw=true"> 
+For instructions on how to use this module, or a list of the other modules [See the Wiki](https://github.com/trulia/thoth-monitor/wiki)
+
+Contributing
+=======================
+1. Fork it
+2. Create your feature/bug fix branch (git checkout -b my-new-feature)
+3. Commit your changes (git commit -am 'Add some feature')
+4. Push to the branch (git push origin my-new-feature)
+5. Create new pull request
+
+Thoth Monitor - Contributors
+=======================
+- [Damiano Braga](https://github.com/dbraga)
+- [Girish Gudla](https://github.com/sgudla)
+
+License
+=============
+Copyright (c) 2014 Trulia, Inc. See the LICENSE file for license rights and limitations.
+
+Powered by
+=============
+<img align="left" src="img/powered-trulia.png?raw=true">
