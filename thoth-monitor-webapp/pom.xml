@@ -4,7 +4,7 @@
     <groupId>com.springapp</groupId>
     <artifactId>thoth-monitor-webapp</artifactId>
     <packaging>war</packaging>
-    <version>1.2-SNAPSHOT</version>
+    <version>1.3-SNAPSHOT</version>
     <name>thoth-monitor-webapp</name>
 
     <dependencies>
